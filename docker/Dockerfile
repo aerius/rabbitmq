@@ -1,4 +1,4 @@
-FROM rabbitmq:4.0.5-management
+FROM rabbitmq:4.2.0-management
 
 RUN rabbitmq-plugins enable --offline rabbitmq_event_exchange rabbitmq_prometheus
 
