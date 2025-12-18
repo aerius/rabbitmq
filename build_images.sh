@@ -6,6 +6,7 @@ SCRIPT_PATH=$(readlink -f "${0}")
 SCRIPT_DIR=$(dirname "${SCRIPT_PATH}")
 cd "${SCRIPT_DIR}"
 
+: "${DOCKER_BUILD_PLATFORMS:=}"
 # If DOCKER_REGISTRY_URL is supplied we should prepend it to the image name
 if [[ -z "${DOCKER_REGISTRY_URL:-}" ]]; then
   IMAGE_NAME='aerius-rabbitmq'
@@ -16,10 +17,11 @@ fi
 # Get version
 IMAGE_TAG=$(<VERSION)
 
-# Build image
-docker build --pull -t "${IMAGE_NAME}":"${IMAGE_TAG}" docker
-# Push image if requested
-if [[ "${PUSH_IMAGES:-}" == 'true' ]]; then
-  echo '# Pushing image'
-  docker push "${IMAGE_NAME}":"${IMAGE_TAG}"
-fi
+BUILDX_BUILD_EXTRA_ARGS=()
+[[ "${PUSH_IMAGES:-}" == 'true' ]] && BUILDX_BUILD_EXTRA_ARGS+=('--push')
+[[ -n "${DOCKER_BUILD_PLATFORMS}" ]] && BUILDX_BUILD_EXTRA_ARGS+=("--platform=${DOCKER_BUILD_PLATFORMS}")
+[[ -z "${DOCKER_BUILD_PLATFORMS}" ]] && BUILDX_BUILD_EXTRA_ARGS+=("--load")
+
+set -x
+# Build (and optionally push) image
+docker buildx build ${BUILDX_BUILD_EXTRA_ARGS[@]} -t "${IMAGE_NAME}":"${IMAGE_TAG}" docker
